@@ -1,5 +1,6 @@
 from cmu_112_graphics import*
 from pieces import*
+from check import*
 
 ###############################################################################
 
@@ -145,7 +146,12 @@ def appStarted(app):
 
 
   #game over/checkmate check
-  #use recursive backtracking?
+  #use recursive backtracking? --> maybe not idk
+
+
+
+  #game over
+  app.game_over = False
 
 
 
@@ -239,7 +245,7 @@ def help_mousePressed(app, event):
 def drawText(app, canvas):
   canvas.create_text((app.width*(6/8) + app.width*(2/8))/2,
                      app.height/2,
-                     text = "RETURN TO START", 
+                     text = "CHESS! CHESS CHES?? CHESS....", 
                      fill = "black", font = f"System 18 bold")
 
 
@@ -423,6 +429,7 @@ def game_keyPressed(app, event):
 
 def game_timerFired(app):
   enPassant(app)
+  tempCheck(app)
 
 
 def get_x_coord(app, col):
@@ -440,331 +447,333 @@ def getCell(app, x, y):
 
 
 def game_mousePressed(app, event):
+
+  if (not app.game_over):
   
-  if (app.mouse_select and not app.mouse_place):
-    app.invalid_move = False
-    app.can_castle = True
-
-    #find piece player wants to move
-    if (app.player_turn):
-      print(f'white turn: {app.player_turn}')
-      app.selected_piece = selectPiece(app, "white", event.x, event.y)
-      print(f'white piece selected = {app.piece_found}')
-      if (app.piece_found):
-        app.mouse_select = False
-        app.mouse_place = True
-        app.player_turn_error = False
-      else:
-        app.player_turn_error = True
-    
-    else:
-      print(f'black turn: {app.player_turn}')
-      app.selected_piece = selectPiece(app, "black", event.x, event.y)
-      print(f'black piece selected = {app.piece_found}')
-      if (app.piece_found):
-        app.mouse_select = False
-        app.mouse_place = True
-        app.player_turn_error = False
-      else:
-        app.player_turn_error = True
-
-
-  elif (app.mouse_place and not app.mouse_select):
-    #place down piece in new square
-    app.mouse_x = event.x
-    app.mouse_y = event.y
-
-    if (app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
-          and not isSquareTaken(app)
-          and not (app.selected_piece.image == app.w_pawn or app.selected_piece.image == app.b_pawn)):
-      
+    if (app.mouse_select and not app.mouse_place):
       app.invalid_move = False
-      new_row, new_col = getCell(app, app.mouse_x, app.mouse_y)
-      app.selected_piece.x = app.selected_piece.get_x_coord(app, new_col)
-      app.selected_piece.y = app.selected_piece.get_y_coord(app, new_row)
-      app.player_turn = not app.player_turn
-      app.mouse_place = False
-      app.mouse_select = True
-      removePiece(app)
+      app.can_castle = True
 
-    elif (app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
-          and not isSquareTaken(app)
-          and (app.selected_piece.image == app.w_pawn or app.selected_piece.image == app.b_pawn)):
-        
-      mouse_row, mouse_col = getCell(app, app.mouse_x, app.mouse_y)
-
-      print(f'mouse_row = {mouse_row}')
-
-      mouse_x = get_x_coord(app, mouse_col)
-      mouse_y = get_y_coord(app, mouse_row)
-
-      if (app.selected_piece.color == "white" and mouse_row == 0):
-
-        w_new_piece = input("Pawn Promotion! What piece do you want: ")
-
-        if (w_new_piece == "frank"):
-          app.w_pawn_9 = Queen("white", app.w_pawn, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_pawn_9)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
+      #find piece player wants to move
+      if (app.player_turn):
+        print(f'white turn: {app.player_turn}')
+        app.selected_piece = selectPiece(app, "white", event.x, event.y)
+        print(f'white piece selected = {app.piece_found}')
+        if (app.piece_found):
+          app.mouse_select = False
+          app.mouse_place = True
+          app.player_turn_error = False
+        else:
+          app.player_turn_error = True
       
-        elif (w_new_piece == "rook"):
-          app.w_rook_3 = Rook("white", app.w_rook, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_rook_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-        
-        elif (w_new_piece == "knight"):
-          app.w_knight_3 = Knight("white", app.w_knight, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_knight_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-          
-        elif (w_new_piece == "bishop"):
-          app.w_bishop_3 = Bishop("white", app.w_bishop, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_bishop_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-          
-        elif (w_new_piece == "queen"):
-          app.w_queen_1 = Queen("white",app.w_queen, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_queen_1)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-
-        elif (w_new_piece == "king"):
-          app.w_king_1 = King("white", app.w_king, mouse_x, mouse_y)
-          app.board_pieces.append(app.w_king_1)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-
-
-      elif(app.selected_piece.color == "black" and mouse_row == 7):
-
-        b_new_piece = input("Pawn Promotion! What piece do you want: ")
-        
-        if (b_new_piece == "frank"):
-          app.b_pawn_9 = Queen("black", app.b_pawn, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_pawn_9)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-      
-        elif (b_new_piece == "rook"):
-          app.b_rook_3 = Rook("black", app.b_rook, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_rook_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-        
-        elif (b_new_piece == "knight"):
-          app.b_knight_3 = Knight("black", app.b_knight, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_knight_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-          
-        elif (b_new_piece == "bishop"):
-          app.b_bishop_3 = Bishop("black", app.b_bishop, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_bishop_3)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-          
-        elif (b_new_piece == "queen"):
-          app.b_queen_1 = Queen("black",app.b_queen, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_queen_1)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-
-        elif (b_new_piece == "king"):
-          app.b_king_1 = King("white", app.b_king, mouse_x, mouse_y)
-          app.board_pieces.append(app.b_king_1)
-          app.selected_piece.move_count += 1
-          app.board_pieces.remove(app.selected_piece)
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-        
-
       else:
+        print(f'black turn: {app.player_turn}')
+        app.selected_piece = selectPiece(app, "black", event.x, event.y)
+        print(f'black piece selected = {app.piece_found}')
+        if (app.piece_found):
+          app.mouse_select = False
+          app.mouse_place = True
+          app.player_turn_error = False
+        else:
+          app.player_turn_error = True
+
+
+    elif (app.mouse_place and not app.mouse_select):
+      #place down piece in new square
+      app.mouse_x = event.x
+      app.mouse_y = event.y
+
+      if (app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
+            and not isSquareTaken(app)
+            and not (app.selected_piece.image == app.w_pawn or app.selected_piece.image == app.b_pawn)):
+        
         app.invalid_move = False
         new_row, new_col = getCell(app, app.mouse_x, app.mouse_y)
         app.selected_piece.x = app.selected_piece.get_x_coord(app, new_col)
         app.selected_piece.y = app.selected_piece.get_y_coord(app, new_row)
-        app.selected_piece.move_count += 1
         app.player_turn = not app.player_turn
         app.mouse_place = False
         app.mouse_select = True
         removePiece(app)
-          
 
-    elif(not app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
-         or isSquareTaken(app)):
-      
-      if (app.selected_piece == app.w_king_0):
+      elif (app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
+            and not isSquareTaken(app)
+            and (app.selected_piece.image == app.w_pawn or app.selected_piece.image == app.b_pawn)):
+          
         mouse_row, mouse_col = getCell(app, app.mouse_x, app.mouse_y)
-        rook_1_row = app.w_rook_1.get_row(app, app.w_rook_1.y)
-        rook_1_col = app.w_rook_1.get_col(app, app.w_rook_1.x)
-        rook_2_row = app.w_rook_2.get_row(app, app.w_rook_2.y)
-        rook_2_col = app.w_rook_2.get_col(app, app.w_rook_2.x)
 
-        print(f"piece btwn: {pieceBetween(app)}")
+        print(f'mouse_row = {mouse_row}')
 
-        if((not pieceBetween(app)) and (app.w_rook_1 not in app.cannot_castle
-                                     and app.w_king_0 not in app.cannot_castle)
-           and (mouse_row == rook_1_row and mouse_col == rook_1_col)):
-          #castle -- king moves two spaces to the left, rook moves to the spot
-          #one col right of the king
+        mouse_x = get_x_coord(app, mouse_col)
+        mouse_y = get_y_coord(app, mouse_row)
 
-          app.can_castle = True
+        if (app.selected_piece.color == "white" and mouse_row == 0):
 
-          curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
-          app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col - 2)
+          w_new_piece = input("Pawn Promotion! What piece do you want: ")
 
-          new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) + 1
-          app.w_rook_1.x = app.w_rook_1.get_x_coord(app, new_rook_col)
-          app.cannot_castle.add(app.selected_piece)
-          app.cannot_castle.add(app.w_rook_1)
-          print("castled white king w/ rook 1")
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
+          if (w_new_piece == "frank"):
+            app.w_pawn_9 = Queen("white", app.w_pawn, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_pawn_9)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
         
-        elif((not pieceBetween(app)) and (app.w_rook_2 not in app.cannot_castle
-                                       and app.w_king_0 not in app.cannot_castle)
-             and (mouse_row == rook_2_row and mouse_col == rook_2_col)):
-          #castle -- king moves two spaces right, rook moves to the spot on the
-          #one col left of the king
+          elif (w_new_piece == "rook"):
+            app.w_rook_3 = Rook("white", app.w_rook, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_rook_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+          
+          elif (w_new_piece == "knight"):
+            app.w_knight_3 = Knight("white", app.w_knight, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_knight_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+            
+          elif (w_new_piece == "bishop"):
+            app.w_bishop_3 = Bishop("white", app.w_bishop, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_bishop_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+            
+          elif (w_new_piece == "queen"):
+            app.w_queen_1 = Queen("white",app.w_queen, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_queen_1)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
 
-          app.can_castle = True
+          elif (w_new_piece == "king"):
+            app.w_king_1 = King("white", app.w_king, mouse_x, mouse_y)
+            app.board_pieces.append(app.w_king_1)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
 
-          curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
-          app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col + 2)
 
-          new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) - 1
-          app.w_rook_2.x = app.w_rook_2.get_x_coord(app, new_rook_col)
-          app.cannot_castle.add(app.selected_piece)
-          app.cannot_castle.add(app.w_rook_2)
-          print("castled white king w/ rook 2")
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
+        elif(app.selected_piece.color == "black" and mouse_row == 7):
+
+          b_new_piece = input("Pawn Promotion! What piece do you want: ")
+          
+          if (b_new_piece == "frank"):
+            app.b_pawn_9 = Queen("black", app.b_pawn, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_pawn_9)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
         
-        else:
-          
-          if (not (mouse_row == rook_1_row and mouse_col == rook_1_col
-                   or (mouse_row == rook_2_row and mouse_col == rook_2_col))):
-            app.invalid_move = False
-            app.can_castle = True
+          elif (b_new_piece == "rook"):
+            app.b_rook_3 = Rook("black", app.b_rook, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_rook_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
             app.mouse_select = True
             app.mouse_place = False
-          else:
-            print(f'cannot castle')
-            app.can_castle = False
-            app.invalid_move = False
+            app.player_turn = not app.player_turn
+          
+          elif (b_new_piece == "knight"):
+            app.b_knight_3 = Knight("black", app.b_knight, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_knight_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
             app.mouse_select = True
             app.mouse_place = False
+            app.player_turn = not app.player_turn
+            
+          elif (b_new_piece == "bishop"):
+            app.b_bishop_3 = Bishop("black", app.b_bishop, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_bishop_3)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+            
+          elif (b_new_piece == "queen"):
+            app.b_queen_1 = Queen("black",app.b_queen, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_queen_1)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
 
+          elif (b_new_piece == "king"):
+            app.b_king_1 = King("white", app.b_king, mouse_x, mouse_y)
+            app.board_pieces.append(app.b_king_1)
+            app.selected_piece.move_count += 1
+            app.board_pieces.remove(app.selected_piece)
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
           
-      elif (app.selected_piece == app.b_king_0):
-        mouse_row, mouse_col = getCell(app, app.mouse_x, app.mouse_y)
-        rook_1_row = app.b_rook_1.get_row(app, app.b_rook_1.y)
-        rook_1_col = app.b_rook_1.get_col(app, app.b_rook_1.x)
-        rook_2_row = app.b_rook_2.get_row(app, app.b_rook_2.y)
-        rook_2_col = app.b_rook_2.get_col(app, app.b_rook_2.x)
-
-        if((not pieceBetween(app)) and (app.b_rook_1 not in app.cannot_castle
-                                     and app.b_king_0 not in app.cannot_castle)
-           and (mouse_row == rook_1_row and mouse_col == rook_1_col)):
-          #castle -- king moves two spaces to the left, rook moves to the spot
-          #one col right of the king
-
-          app.can_castle = True
-
-          curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
-          app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col - 2)
-
-          new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) + 1
-          app.b_rook_1.x = app.b_rook_1.get_x_coord(app, new_rook_col)
-          app.cannot_castle.add(app.selected_piece)
-          app.cannot_castle.add(app.b_rook_1)
-          print("castled black king w/ rook 1")
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
-
-        elif((not pieceBetween(app)) and (app.b_rook_2 not in app.cannot_castle
-                                       and app.b_king_0 not in app.cannot_castle)
-             and (mouse_row == rook_2_row and mouse_col == rook_2_col)):
-          #castle -- king moves two spaces right, rook moves to the spot on the
-          #one col left of the king
-
-          app.can_castle = True
-
-          curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
-          app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col + 2)
-
-          new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) - 1
-          app.b_rook_2.x = app.b_rook_2.get_x_coord(app, new_rook_col)
-          app.cannot_castle.add(app.selected_piece)
-          app.cannot_castle.add(app.b_rook_2)
-          print("castled black king w/ rook 2")
-          app.mouse_select = True
-          app.mouse_place = False
-          app.player_turn = not app.player_turn
 
         else:
-          
-          if (not (mouse_row == rook_1_row and mouse_col == rook_1_col
-                   or mouse_row == rook_2_row and mouse_col == rook_2_col)):
-            app.invalid_move = False 
-            app.can_castle = True
-            app.mouse_select = True
-            app.mouse_place = False
-          else:
-            print(f'cannot castle')
-            app.can_castle = False
-            app.invalid_move = False
-            app.mouse_select = True
-            app.mouse_place = False
+          app.invalid_move = False
+          new_row, new_col = getCell(app, app.mouse_x, app.mouse_y)
+          app.selected_piece.x = app.selected_piece.get_x_coord(app, new_col)
+          app.selected_piece.y = app.selected_piece.get_y_coord(app, new_row)
+          app.selected_piece.move_count += 1
+          app.player_turn = not app.player_turn
+          app.mouse_place = False
+          app.mouse_select = True
+          removePiece(app)
+            
 
-    else:
-      app.invalid_move = True
-      #print("invalid move")
-      app.mouse_select = True
-      app.mouse_place = False
-      print(f'placing piece, invalid move? : {app.invalid_move}')
-  
+      elif(not app.selected_piece.is_valid_move(app, app.mouse_x, app.mouse_y)
+          or isSquareTaken(app)):
+        
+        if (app.selected_piece == app.w_king_0):
+          mouse_row, mouse_col = getCell(app, app.mouse_x, app.mouse_y)
+          rook_1_row = app.w_rook_1.get_row(app, app.w_rook_1.y)
+          rook_1_col = app.w_rook_1.get_col(app, app.w_rook_1.x)
+          rook_2_row = app.w_rook_2.get_row(app, app.w_rook_2.y)
+          rook_2_col = app.w_rook_2.get_col(app, app.w_rook_2.x)
+
+          print(f"piece btwn: {pieceBetween(app)}")
+
+          if((not pieceBetween(app)) and (app.w_rook_1 not in app.cannot_castle
+                                      and app.w_king_0 not in app.cannot_castle)
+            and (mouse_row == rook_1_row and mouse_col == rook_1_col)):
+            #castle -- king moves two spaces to the left, rook moves to the spot
+            #one col right of the king
+
+            app.can_castle = True
+
+            curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
+            app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col - 2)
+
+            new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) + 1
+            app.w_rook_1.x = app.w_rook_1.get_x_coord(app, new_rook_col)
+            app.cannot_castle.add(app.selected_piece)
+            app.cannot_castle.add(app.w_rook_1)
+            print("castled white king w/ rook 1")
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+          
+          elif((not pieceBetween(app)) and (app.w_rook_2 not in app.cannot_castle
+                                        and app.w_king_0 not in app.cannot_castle)
+              and (mouse_row == rook_2_row and mouse_col == rook_2_col)):
+            #castle -- king moves two spaces right, rook moves to the spot on the
+            #one col left of the king
+
+            app.can_castle = True
+
+            curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
+            app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col + 2)
+
+            new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) - 1
+            app.w_rook_2.x = app.w_rook_2.get_x_coord(app, new_rook_col)
+            app.cannot_castle.add(app.selected_piece)
+            app.cannot_castle.add(app.w_rook_2)
+            print("castled white king w/ rook 2")
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+          
+          else:
+            
+            if (not (mouse_row == rook_1_row and mouse_col == rook_1_col
+                    or (mouse_row == rook_2_row and mouse_col == rook_2_col))):
+              app.invalid_move = False
+              app.can_castle = True
+              app.mouse_select = True
+              app.mouse_place = False
+            else:
+              print(f'cannot castle')
+              app.can_castle = False
+              app.invalid_move = False
+              app.mouse_select = True
+              app.mouse_place = False
+
+            
+        elif (app.selected_piece == app.b_king_0):
+          mouse_row, mouse_col = getCell(app, app.mouse_x, app.mouse_y)
+          rook_1_row = app.b_rook_1.get_row(app, app.b_rook_1.y)
+          rook_1_col = app.b_rook_1.get_col(app, app.b_rook_1.x)
+          rook_2_row = app.b_rook_2.get_row(app, app.b_rook_2.y)
+          rook_2_col = app.b_rook_2.get_col(app, app.b_rook_2.x)
+
+          if((not pieceBetween(app)) and (app.b_rook_1 not in app.cannot_castle
+                                      and app.b_king_0 not in app.cannot_castle)
+            and (mouse_row == rook_1_row and mouse_col == rook_1_col)):
+            #castle -- king moves two spaces to the left, rook moves to the spot
+            #one col right of the king
+
+            app.can_castle = True
+
+            curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
+            app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col - 2)
+
+            new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) + 1
+            app.b_rook_1.x = app.b_rook_1.get_x_coord(app, new_rook_col)
+            app.cannot_castle.add(app.selected_piece)
+            app.cannot_castle.add(app.b_rook_1)
+            print("castled black king w/ rook 1")
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+
+          elif((not pieceBetween(app)) and (app.b_rook_2 not in app.cannot_castle
+                                        and app.b_king_0 not in app.cannot_castle)
+              and (mouse_row == rook_2_row and mouse_col == rook_2_col)):
+            #castle -- king moves two spaces right, rook moves to the spot on the
+            #one col left of the king
+
+            app.can_castle = True
+
+            curr_col = app.selected_piece.get_col(app, app.selected_piece.x)
+            app.selected_piece.x = app.selected_piece.get_x_coord(app, curr_col + 2)
+
+            new_rook_col = app.selected_piece.get_col(app, app.selected_piece.x) - 1
+            app.b_rook_2.x = app.b_rook_2.get_x_coord(app, new_rook_col)
+            app.cannot_castle.add(app.selected_piece)
+            app.cannot_castle.add(app.b_rook_2)
+            print("castled black king w/ rook 2")
+            app.mouse_select = True
+            app.mouse_place = False
+            app.player_turn = not app.player_turn
+
+          else:
+            
+            if (not (mouse_row == rook_1_row and mouse_col == rook_1_col
+                    or mouse_row == rook_2_row and mouse_col == rook_2_col)):
+              app.invalid_move = False 
+              app.can_castle = True
+              app.mouse_select = True
+              app.mouse_place = False
+            else:
+              print(f'cannot castle')
+              app.can_castle = False
+              app.invalid_move = False
+              app.mouse_select = True
+              app.mouse_place = False
+
+      else:
+        app.invalid_move = True
+        #print("invalid move")
+        app.mouse_select = True
+        app.mouse_place = False
+        print(f'placing piece, invalid move? : {app.invalid_move}')
+    
 
 
 
@@ -849,7 +858,20 @@ def drawTakenPieces(app, canvas):
     canvas.create_image((((app.cell_width)*(i/2)) + app.side_margin) + app.cell_width/2,
                         ((((app.cell_height)*(7)) + app.top_margin) + app.cell_height/2) + app.top_margin/1.9,
                         image=ImageTk.PhotoImage(app.w_taken_pieces[i].image))
+    
 
+def drawGameOver(app, canvas):
+  canvas.create_text(app.cell_width*(6),
+                        ((((app.cell_height)*(0)) + app.top_margin) + app.cell_height/2) - app.top_margin/1.25,
+                        text = "Game Over!", fill = "black", font = f"System 48 bold")
+  if (app.player_turn):
+    canvas.create_text(app.cell_width*(6),
+                          ((((app.cell_height)*(7)) + app.top_margin) + app.cell_height/2) + app.top_margin/1.8,
+                          text = "Black Wins", fill = "black", font = f"System 48 bold")
+  else:
+    canvas.create_text(app.cell_width*(6),
+                          ((((app.cell_height)*(7)) + app.top_margin) + app.cell_height/2) + app.top_margin/1.8,
+                          text = "White Wins", fill = "black", font = f"System 48 bold")
 
 
 ################# GAME VIEW FUNCTION ########################
@@ -868,14 +890,20 @@ def game_redrawAll(app, canvas):
   #place pieces
   drawPlayingPieces(app, canvas)
 
-  #draw turn labels
-  drawPlayerTurn(app, canvas)
-
-  #draw error messages
-  errorMessages(app, canvas)
-
   #draw taken pieces
   drawTakenPieces(app, canvas)
+
+  if (app.game_over):
+    #game over label
+    drawGameOver(app, canvas)
+  
+  else:
+    #draw turn labels
+    drawPlayerTurn(app, canvas)
+
+    #draw error messages
+    errorMessages(app, canvas)
+
 
 
 

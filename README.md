@@ -4,5 +4,5 @@ pieces around the board.
 
 
 How to Run the Project:
-To run this game, download all prject files to your computer and open and run the file called "project.py"
+To run this game, download all project files to your computer and open and run the file called "project.py"
 in an editor. There are no other libraries or  modules needed.
